@@ -31,6 +31,31 @@ interface Pack {
   stripe_price_id: string;
 }
 
+// Separate fetch functions to avoid deep type instantiation
+async function fetchPlans(): Promise<Plan[]> {
+  const supabaseClient: any = supabase;
+  const result = await supabaseClient
+    .from("plans")
+    .select("*")
+    .eq("is_active", true)
+    .order("amount_cents");
+  
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
+async function fetchPacks(): Promise<Pack[]> {
+  const supabaseClient: any = supabase;
+  const result = await supabaseClient
+    .from("packs")
+    .select("*")
+    .eq("is_active", true)
+    .order("amount_cents");
+  
+  if (result.error) throw result.error;
+  return result.data || [];
+}
+
 const WalletBilling = () => {
   const { currentWorkspace } = useWorkspace();
   const [loading, setLoading] = useState(false);
@@ -53,34 +78,18 @@ const WalletBilling = () => {
   });
 
   // Fetch available plans
-  const { data: plans } = useQuery({
+  const plansQuery = useQuery<Plan[]>({
     queryKey: ["billing-plans"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("plans")
-        .select("*")
-        .eq("is_active", true)
-        .order("amount_cents");
-      
-      if (error) throw error;
-      return data as any as Plan[];
-    },
+    queryFn: fetchPlans,
   });
+  const plans = plansQuery.data;
 
   // Fetch available credit packs
-  const { data: packs } = useQuery({
+  const packsQuery = useQuery<Pack[]>({
     queryKey: ["billing-packs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("packs")
-        .select("*")
-        .eq("is_active", true)
-        .order("amount_cents");
-      
-      if (error) throw error;
-      return data as any as Pack[];
-    },
+    queryFn: fetchPacks,
   });
+  const packs = packsQuery.data;
 
   const handleSelectPlan = async (plan: Plan) => {
     if (!plan.stripe_price_id) {
