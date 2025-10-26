@@ -6,11 +6,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Image as ImageIcon, Sparkles, Download, Heart } from "lucide-react";
-import { generateImage, estimateCredits } from "@/lib/mock-providers";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function MediaImage() {
+  const { currentWorkspace } = useWorkspace();
   const [prompt, setPrompt] = useState("");
   const [width, setWidth] = useState("1024");
   const [height, setHeight] = useState("1024");
@@ -19,24 +21,35 @@ export default function MediaImage() {
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!prompt.trim() || !currentWorkspace) {
       toast.error("Please enter a prompt");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const result = await generateImage({
-        prompt,
-        width: parseInt(width),
-        height: parseInt(height),
-        style,
+      const { data, error } = await supabase.functions.invoke('generate-image', {
+        body: {
+          workspaceId: currentWorkspace.id,
+          prompt: prompt.trim(),
+          width: parseInt(width),
+          height: parseInt(height),
+          style: style || undefined,
+        }
       });
-      setGeneratedImage(result.url);
-      const credits = estimateCredits('image_generation', { width: parseInt(width), height: parseInt(height) });
-      toast.success(`Image generated! (${credits} credits used)`);
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setGeneratedImage(data.url);
+      toast.success(`Image generated! Used ${data.creditsUsed} credits`);
     } catch (error) {
       toast.error("Failed to generate image");
+      console.error(error);
     } finally {
       setIsGenerating(false);
     }
@@ -124,7 +137,7 @@ export default function MediaImage() {
 
             <div className="flex items-center justify-between pt-2">
               <Badge variant="outline" className="text-xs">
-                ~{estimateCredits('image_generation', { width: parseInt(width), height: parseInt(height) })} credits
+                ~{Math.ceil((parseInt(width) * parseInt(height)) / 250000)} credits
               </Badge>
               <Button
                 onClick={handleGenerate}

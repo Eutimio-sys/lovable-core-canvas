@@ -78,9 +78,64 @@ serve(async (req) => {
       .select()
       .single();
 
-    // Mock image generation
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    const mockImageUrl = `https://images.unsplash.com/photo-1557683316-973673baf926?w=${width}&h=${height}&fit=crop`;
+    // Generate image using Lovable AI (Nano banana model)
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
+
+    const stylePrompt = style ? `Style: ${style}. ` : '';
+    const fullPrompt = `${stylePrompt}${prompt}. Aspect ratio: ${width}x${height}. Ultra high resolution.`;
+
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash-image-preview',
+        messages: [
+          { role: 'user', content: fullPrompt }
+        ],
+        modalities: ['image', 'text']
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('AI Gateway error:', aiResponse.status, errorText);
+      throw new Error(`Image generation failed: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const base64Image = aiData.choices?.[0]?.message?.images?.[0]?.image_url?.url;
+    
+    if (!base64Image) {
+      throw new Error('No image returned from AI');
+    }
+
+    // Upload to Supabase Storage
+    const imageBuffer = Uint8Array.from(atob(base64Image.split(',')[1]), c => c.charCodeAt(0));
+    const fileName = `${workspaceId}/${Date.now()}-${prompt.substring(0, 20).replace(/[^a-z0-9]/gi, '-')}.png`;
+    
+    const { data: uploadData, error: uploadError } = await supabaseClient.storage
+      .from('assets')
+      .upload(fileName, imageBuffer, {
+        contentType: 'image/png',
+        upsert: false
+      });
+
+    if (uploadError) {
+      console.error('Storage upload error:', uploadError);
+      throw new Error(`Failed to upload image: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabaseClient.storage
+      .from('assets')
+      .getPublicUrl(fileName);
+
+    const mockImageUrl = publicUrl;
 
     // Create asset record
     const { data: asset } = await supabaseClient

@@ -83,18 +83,43 @@ serve(async (req) => {
 
     if (jobError) throw jobError;
 
-    // Mock text generation (replace with real AI API call)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    // Generate text using Lovable AI
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY not configured');
+    }
 
-    const templates: Record<string, string> = {
-      post: `🚀 Exciting news! ${prompt}\n\nWhat do you think? Drop a comment below! 👇\n\n#innovation #ai #content`,
-      caption: `✨ ${prompt}\n\n📸 Making memories one moment at a time\n\n#lifestyle #inspiration`,
-      article: `# ${prompt}\n\n## Introduction\n\nIn today's digital landscape, content creation has evolved dramatically...\n\n## Key Points\n\n1. Innovation drives success\n2. Quality matters\n3. Authenticity builds trust`,
-      script: `[SCENE 1]\n\n"${prompt}"\n\n[Visual: Dynamic intro]\n\n[SCENE 2]\n\n...`,
-      email: `Subject: ${prompt}\n\nHi there,\n\nWe're excited to share...\n\nBest regards,\nYour Team`,
+    const systemPrompts: Record<string, string> = {
+      post: 'You are a social media content creator. Create engaging, viral-worthy posts with emojis and hashtags.',
+      caption: 'You are an Instagram caption writer. Create catchy, emotional captions with relevant hashtags.',
+      article: 'You are a professional content writer. Create well-structured articles with headers and key points.',
+      script: 'You are a video script writer. Create engaging scripts with scene descriptions and dialogue.',
+      email: 'You are an email marketing specialist. Create compelling email content with clear CTAs.',
     };
 
-    const generatedText = templates[contentType] || `Generated: ${prompt}`;
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompts[contentType] || 'You are a helpful content creator.' },
+          { role: 'user', content: `Create ${contentType} content based on: ${prompt}. ${tone ? `Tone: ${tone}.` : ''} ${maxLength ? `Maximum length: ${maxLength} words.` : ''}` }
+        ],
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('AI Gateway error:', aiResponse.status, errorText);
+      throw new Error(`AI generation failed: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const generatedText = aiData.choices[0].message.content;
 
     // Create content record
     const { data: content } = await supabaseClient

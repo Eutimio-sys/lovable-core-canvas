@@ -6,34 +6,48 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Sparkles, Save, Copy, Download } from "lucide-react";
-import { generateText, estimateCredits } from "@/lib/mock-providers";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function ContentStudio() {
+  const { currentWorkspace } = useWorkspace();
   const [prompt, setPrompt] = useState("");
   const [contentType, setContentType] = useState("post");
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
 
   const handleGenerate = async () => {
-    if (!prompt.trim()) {
+    if (!prompt.trim() || !currentWorkspace) {
       toast.error("Please enter a prompt");
       return;
     }
 
     setIsGenerating(true);
     try {
-      const result = await generateText({
-        prompt,
-        contentType,
-        maxLength: 500,
+      const { data, error } = await supabase.functions.invoke('generate-text', {
+        body: {
+          workspaceId: currentWorkspace.id,
+          prompt: prompt.trim(),
+          contentType,
+          maxLength: 500,
+          tone: "professional",
+        }
       });
-      setGeneratedContent(result);
-      const credits = estimateCredits('text_generation', { prompt });
-      toast.success(`Content generated! (${credits} credit used)`);
+
+      if (error) throw error;
+
+      if (data.error) {
+        toast.error(data.error);
+        return;
+      }
+
+      setGeneratedContent(data.text);
+      toast.success(`Content generated! Used ${data.creditsUsed} credits`);
     } catch (error) {
       toast.error("Failed to generate content");
+      console.error(error);
     } finally {
       setIsGenerating(false);
     }
@@ -96,7 +110,7 @@ export default function ContentStudio() {
 
             <div className="flex items-center justify-between">
               <Badge variant="outline" className="text-xs">
-                ~{estimateCredits('text_generation', { prompt })} credit
+                ~1 credit
               </Badge>
               <Button
                 onClick={handleGenerate}
