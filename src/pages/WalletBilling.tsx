@@ -1,174 +1,300 @@
-import { Coins, CreditCard, TrendingUp, Zap } from "lucide-react";
-import { StatsCard } from "@/components/shared/StatsCard";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { useWorkspace } from "@/hooks/useWorkspace";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
+import { Wallet, CreditCard, History, ExternalLink } from "lucide-react";
+import { PlanCard } from "@/components/billing/PlanCard";
+import { CreditPackCard } from "@/components/billing/CreditPackCard";
+import { UsageHistory } from "@/components/billing/UsageHistory";
+import { toast } from "sonner";
+import { useState } from "react";
 
-export default function WalletBilling() {
-  // Mock data
-  const currentPlan = "Pro";
-  const creditsBalance = 1247;
-  const monthlyAllowance = 1200;
-  const creditsUsed = 953;
-  const usagePercentage = (creditsUsed / (creditsBalance + creditsUsed)) * 100;
+interface Plan {
+  id: string;
+  name: string;
+  amount_cents: number;
+  interval: string;
+  credits_per_interval: number;
+  features: string[];
+  stripe_price_id: string;
+}
 
-  const recentTransactions = [
-    { id: "1", type: "usage", description: "Image Generation", amount: -5, date: "2 hours ago" },
-    { id: "2", type: "usage", description: "Text Generation", amount: -1, date: "3 hours ago" },
-    { id: "3", type: "purchase", description: "Credit Top-up", amount: +500, date: "Yesterday" },
-    { id: "4", type: "grant", description: "Monthly Allowance", amount: +1200, date: "5 days ago" },
-  ];
+interface Pack {
+  id: string;
+  name: string;
+  amount_cents: number;
+  credits: number;
+  bonus_credits: number;
+  stripe_price_id: string;
+}
 
-  const plans = [
-    {
-      name: "Starter",
-      price: "Free",
-      credits: 20,
-      features: ["20 credits/month", "Basic AI models", "Watermarked outputs", "Community support"],
+const WalletBilling = () => {
+  const { currentWorkspace } = useWorkspace();
+  const [loading, setLoading] = useState(false);
+
+  // Fetch wallet balance
+  const { data: wallet } = useQuery({
+    queryKey: ["wallet", currentWorkspace?.id],
+    queryFn: async () => {
+      if (!currentWorkspace?.id) return null;
+      const { data, error } = await supabase
+        .from("wallets")
+        .select("*")
+        .eq("workspace_id", currentWorkspace.id)
+        .single();
+      
+      if (error) throw error;
+      return data;
     },
-    {
-      name: "Creator",
-      price: "$15",
-      credits: 300,
-      features: ["300 credits/month", "All AI models", "No watermarks", "Priority support"],
-      popular: false,
+    enabled: !!currentWorkspace?.id,
+  });
+
+  // Fetch available plans
+  const { data: plans } = useQuery({
+    queryKey: ["billing-plans"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("plans")
+        .select("*")
+        .eq("is_active", true)
+        .order("amount_cents");
+      
+      if (error) throw error;
+      return data as any as Plan[];
     },
-    {
-      name: "Pro",
-      price: "$49",
-      credits: 1200,
-      features: ["1,200 credits/month", "Advanced models", "API access", "Premium support"],
-      popular: true,
+  });
+
+  // Fetch available credit packs
+  const { data: packs } = useQuery({
+    queryKey: ["billing-packs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("packs")
+        .select("*")
+        .eq("is_active", true)
+        .order("amount_cents");
+      
+      if (error) throw error;
+      return data as any as Pack[];
     },
-    {
-      name: "Team",
-      price: "$99",
-      credits: 3000,
-      features: ["3,000 credits/month", "Team collaboration", "Admin controls", "Dedicated support"],
-    },
-  ];
+  });
+
+  const handleSelectPlan = async (plan: Plan) => {
+    if (!plan.stripe_price_id) {
+      toast.error("This plan is not yet configured for checkout");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+        body: {
+          type: "subscription",
+          priceId: plan.stripe_price_id,
+          workspaceId: currentWorkspace?.id,
+          successUrl: `${window.location.origin}/wallet-billing?success=true`,
+          cancelUrl: `${window.location.origin}/wallet-billing?canceled=true`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Failed to start checkout process");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePurchasePack = async (pack: Pack) => {
+    if (!pack.stripe_price_id) {
+      toast.error("This pack is not yet configured for checkout");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-checkout", {
+        body: {
+          type: "payment",
+          priceId: pack.stripe_price_id,
+          workspaceId: currentWorkspace?.id,
+          successUrl: `${window.location.origin}/wallet-billing?success=true`,
+          cancelUrl: `${window.location.origin}/wallet-billing?canceled=true`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Failed to start checkout process");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenPortal = async () => {
+    const stripeCustomerId = (currentWorkspace as any)?.stripe_customer_id;
+    if (!stripeCustomerId) {
+      toast.error("No billing account found");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("stripe-portal", {
+        body: {
+          customerId: stripeCustomerId,
+          returnUrl: `${window.location.origin}/wallet-billing`,
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error("Portal error:", error);
+      toast.error("Failed to open billing portal");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div className="p-6 space-y-6 max-w-7xl mx-auto">
-      <div>
-        <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-          Wallet & Billing
-        </h1>
-        <p className="text-muted-foreground">Manage your credits and subscription</p>
-      </div>
-
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-4">
-        <StatsCard
-          title="Available Credits"
-          value={creditsBalance.toLocaleString()}
-          icon={Coins}
-          className="md:col-span-2"
-        />
-        <StatsCard
-          title="Current Plan"
-          value={currentPlan}
-          description={`${monthlyAllowance} credits/month`}
-          icon={CreditCard}
-        />
-        <StatsCard
-          title="Credits Used"
-          value={creditsUsed.toLocaleString()}
-          description="This billing cycle"
-          icon={TrendingUp}
-        />
-      </div>
-
-      {/* Usage Overview */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Credit Usage</CardTitle>
-          <CardDescription>Your credit consumption this month</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
+    <AppLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span className="font-medium">{creditsUsed} / {monthlyAllowance + creditsBalance} credits used</span>
-              <span className="text-muted-foreground">{usagePercentage.toFixed(0)}%</span>
-            </div>
-            <Progress value={usagePercentage} className="h-3" />
+            <h1 className="text-3xl font-bold">Wallet & Billing</h1>
+            <p className="text-muted-foreground mt-1">Manage your credits and subscriptions</p>
           </div>
-          <Button className="w-full bg-gradient-primary hover:opacity-90">
-            <Zap className="h-4 w-4 mr-2" />
-            Top Up Credits
-          </Button>
-        </CardContent>
-      </Card>
+          {(currentWorkspace as any)?.stripe_customer_id && (
+            <Button onClick={handleOpenPortal} disabled={loading} variant="outline">
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Manage Billing
+            </Button>
+          )}
+        </div>
 
-      {/* Plans */}
-      <div>
-        <h2 className="text-2xl font-bold mb-4">Subscription Plans</h2>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {plans.map((plan) => (
-            <Card key={plan.name} className={plan.popular ? "border-primary shadow-glow" : ""}>
-              {plan.popular && (
-                <div className="bg-gradient-primary text-primary-foreground text-center py-1 text-sm font-medium">
-                  Most Popular
-                </div>
-              )}
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Available Credits</CardTitle>
+              <Wallet className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{wallet?.balance?.toLocaleString() || 0}</div>
+              <p className="text-xs text-muted-foreground">credits remaining</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Current Plan</CardTitle>
+              <CreditCard className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {(currentWorkspace as any)?.subscription_status || "Free"}
+              </div>
+              <p className="text-xs text-muted-foreground capitalize">
+                {(currentWorkspace as any)?.subscription_status || "No active subscription"}
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Lifetime Spent</CardTitle>
+              <History className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                ${(((wallet as any)?.lifetime_spent_cents || 0) / 100).toFixed(2)}
+              </div>
+              <p className="text-xs text-muted-foreground">total spending</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Tabs defaultValue="plans" className="space-y-4">
+          <TabsList>
+            <TabsTrigger value="plans">Subscription Plans</TabsTrigger>
+            <TabsTrigger value="packs">Credit Packs</TabsTrigger>
+            <TabsTrigger value="history">Usage History</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="plans" className="space-y-4">
+            <Card>
               <CardHeader>
-                <CardTitle>{plan.name}</CardTitle>
-                <div className="mt-2">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  {plan.price !== "Free" && <span className="text-muted-foreground">/month</span>}
-                </div>
-                <CardDescription className="mt-2">
-                  <Badge variant="outline">{plan.credits} credits</Badge>
+                <CardTitle>Choose Your Plan</CardTitle>
+                <CardDescription>
+                  Select a subscription plan that fits your needs. Get monthly credits and exclusive features.
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <ul className="space-y-2">
-                  {plan.features.map((feature, i) => (
-                    <li key={i} className="text-sm flex items-start">
-                      <span className="text-primary mr-2">✓</span>
-                      {feature}
-                    </li>
+                <div className="grid gap-6 md:grid-cols-3">
+                  {plans?.map((plan) => (
+                    <PlanCard
+                      key={plan.id}
+                      name={plan.name}
+                      price={plan.amount_cents}
+                      interval={plan.interval || "month"}
+                      credits={plan.credits_per_interval}
+                      features={(plan.features as string[]) || []}
+                      isCurrentPlan={(currentWorkspace as any)?.current_plan_id === plan.id}
+                      onSelect={() => handleSelectPlan(plan)}
+                      loading={loading}
+                    />
                   ))}
-                </ul>
-                <Button
-                  className="w-full mt-4"
-                  variant={plan.name === currentPlan ? "outline" : "default"}
-                  disabled={plan.name === currentPlan}
-                >
-                  {plan.name === currentPlan ? "Current Plan" : "Upgrade"}
-                </Button>
+                </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
-      </div>
+          </TabsContent>
 
-      {/* Transaction History */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Transactions</CardTitle>
-          <CardDescription>Your credit transaction history</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {recentTransactions.map((tx) => (
-              <div key={tx.id} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                <div>
-                  <p className="text-sm font-medium">{tx.description}</p>
-                  <p className="text-xs text-muted-foreground">{tx.date}</p>
+          <TabsContent value="packs" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Buy Credit Packs</CardTitle>
+                <CardDescription>
+                  One-time credit purchases with bonus credits. Perfect for occasional use or topping up your balance.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                  {packs?.map((pack) => (
+                    <CreditPackCard
+                      key={pack.id}
+                      name={pack.name}
+                      price={pack.amount_cents}
+                      credits={pack.credits}
+                      bonusCredits={pack.bonus_credits || 0}
+                      onPurchase={() => handlePurchasePack(pack)}
+                      loading={loading}
+                    />
+                  ))}
                 </div>
-                <Badge
-                  variant={tx.amount > 0 ? "default" : "outline"}
-                  className={tx.amount > 0 ? "bg-success" : ""}
-                >
-                  {tx.amount > 0 ? "+" : ""}{tx.amount} credits
-                </Badge>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="history" className="space-y-4">
+            {currentWorkspace?.id && <UsageHistory workspaceId={currentWorkspace.id} />}
+          </TabsContent>
+        </Tabs>
+      </div>
+    </AppLayout>
   );
-}
+};
+
+export default WalletBilling;
