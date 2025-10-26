@@ -6,7 +6,7 @@ A full-stack SaaS platform for creating and managing AI-generated content (text,
 
 ## 🌟 Features
 
-### MVP (Phase 1) - **Current Implementation**
+### Phase 1 (MVP) - **Complete ✅**
 
 - ✅ **Multi-tenant Workspaces** - Organizations with member management and RBAC
 - ✅ **Content Studio** - AI-powered text generation (posts, captions, articles, scripts)
@@ -14,16 +14,40 @@ A full-stack SaaS platform for creating and managing AI-generated content (text,
   - 🖼️ Images (various styles and sizes)
   - 🎬 Videos (cinematic, animation, time-lapse)
   - 🎙️ Voice (text-to-speech with multiple voices)
-- ✅ **Asset Library** - Centralized media management
+- ✅ **Asset Library** - Centralized media management with database storage
 - ✅ **Job Queue System** - Async processing with real-time status
 - ✅ **Wallet & Credits** - Usage-based billing with multiple plans
 - ✅ **Dashboard** - Real-time analytics and activity tracking
 - ✅ **Team Management** - Invite members with granular role permissions
 
+### Phase 2 (Scheduler & Automation) - **Complete ✅**
+
+- ✅ **Content Scheduler** - Schedule posts across multiple social media platforms
+  - Create and manage scheduled posts
+  - Multi-platform publishing (Facebook/Instagram, X, LinkedIn, TikTok)
+  - Calendar view for upcoming and past posts
+  - Credit hold and finalization system
+- ✅ **Social Connections** - Connect and manage social media accounts
+  - Mock OAuth integration for social platforms
+  - Channel status monitoring (active/expired)
+  - Token management for API access
+- ✅ **Automation Builder** - Create automated workflows
+  - Visual flow builder with triggers and actions
+  - Test runs for debugging
+  - Active/inactive flow management
+  - Credit estimation and tracking
+- ✅ **Social Adapter Layer (SAL)** - Unified API for social media
+  - Provider-agnostic architecture
+  - Mock implementations for all platforms
+  - Post formatting and media handling
+- ✅ **Edge Functions** - Backend automation services
+  - `scheduler-publish`: Manage scheduled posts
+  - `channels`: Handle social media connections
+  - `automation-engine`: Execute automation workflows
+  - `scheduler-worker`: Cron job for publishing (ready for pg_cron)
+
 ### Upcoming Features
 
-- 📅 **Scheduler** (Phase 2) - Content calendar and automation workflows
-- 🔗 **Social Integrations** (Phase 2) - Connect to Facebook, Instagram, Twitter, etc.
 - 💳 **Stripe Billing** (Phase 3) - Real payment processing
 - 📊 **Advanced Analytics** (Phase 4) - Detailed reports and insights
 - 🛍️ **Template Marketplace** (Phase 5) - Share and sell automation workflows
@@ -59,7 +83,15 @@ The platform features a modern AI-focused design with:
 - `usage_ledger` - Credit transaction history
 - `invitations` - Team member invitations
 - `audit_logs` - Security and compliance logging
-- `automation_flows` - Workflow definitions (Phase 2)
+
+### Phase 2 Tables
+
+- `channels` - Connected social media accounts
+- `channel_tokens` - OAuth tokens for social APIs
+- `scheduled_posts` - Posts scheduled for publication
+- `automation_flows` - Workflow definitions with triggers/actions
+- `automation_runs` - Execution history of automation flows
+- `notifications` - User alerts and system messages
 
 ### Role-Based Access Control
 
@@ -192,17 +224,41 @@ These can be easily replaced with real AI provider integrations.
 
 1. **Generate Content**: Go to Content Studio and create a post
 2. **Create Image**: Use Media Studio to generate an image
-3. **Monitor Jobs**: Watch the job queue in Dashboard
-4. **Check Credits**: View usage in Wallet & Billing
-5. **Manage Team**: Invite members in Members section
+3. **Save Assets**: Save generated content to Asset Library
+4. **Connect Social**: Link social media accounts in Connections
+5. **Schedule Post**: Create scheduled post in Scheduler
+6. **Setup Automation**: Build automated workflows in Automation Builder
+7. **Monitor Jobs**: Watch the job queue in Dashboard
+8. **Check Credits**: View usage in Wallet & Billing
+9. **Manage Team**: Invite members in Members section
+
+### Phase 2 Features Testing
+
+1. **Social Connections**:
+   - Navigate to Connections page
+   - Click "Connect" on any social platform (mock OAuth)
+   - View connected channels list
+
+2. **Content Scheduler**:
+   - Go to Scheduler page
+   - Click "Schedule Post"
+   - Select platforms, enter caption, and set time
+   - View upcoming and past posts
+
+3. **Automation Builder**:
+   - Open Automation Builder
+   - Create new automation flow
+   - Set trigger (e.g., "When content is created")
+   - Set action (e.g., "Schedule post")
+   - Toggle flow active/inactive
+   - Run test execution
 
 ### Mock Data
 
-All pages include mock data for demonstration. To connect real data:
-
-1. Create Supabase client queries
-2. Use React Query hooks
-3. Connect to edge functions for AI processing
+All pages include mock data or database integration:
+- Phase 1 pages use Supabase for persistence
+- Phase 2 pages use Edge Functions + database
+- Social integrations use mock OAuth (ready for real providers)
 
 ## 📁 Project Structure
 
@@ -219,18 +275,29 @@ src/
 │   ├── MediaVideo.tsx
 │   ├── MediaVoice.tsx
 │   ├── AssetLibrary.tsx
-│   ├── Scheduler.tsx
+│   ├── Scheduler.tsx        # Phase 2
+│   ├── Connections.tsx      # Phase 2
+│   ├── AutomationBuilder.tsx # Phase 2
 │   ├── WalletBilling.tsx
 │   ├── Members.tsx
 │   └── Settings.tsx
 ├── lib/
-│   ├── mock-providers.ts  # AI provider adapters
-│   └── utils.ts           # Utilities
+│   ├── mock-providers.ts    # AI provider adapters
+│   ├── social-providers.ts  # Social media SAL (Phase 2)
+│   └── utils.ts             # Utilities
 ├── types/
-│   └── index.ts           # TypeScript definitions
+│   └── index.ts             # TypeScript definitions
 ├── integrations/
-│   └── supabase/          # Database client & types
-└── index.css             # Design system tokens
+│   └── supabase/            # Database client & types
+├── index.css               # Design system tokens
+└── supabase/
+    └── functions/           # Edge functions
+        ├── generate-image/
+        ├── generate-text/
+        ├── scheduler-publish/    # Phase 2
+        ├── channels/             # Phase 2
+        ├── automation-engine/    # Phase 2
+        └── scheduler-worker/     # Phase 2 (Cron)
 ```
 
 ## 🔐 Security
@@ -260,27 +327,95 @@ Edge functions auto-deploy with Lovable Cloud when you make changes.
 
 ## 📚 API Documentation
 
-### Edge Functions (To be implemented)
+### Edge Functions
 
+**Phase 1:**
 ```
-POST /functions/v1/generate-content
-POST /functions/v1/generate-image
-POST /functions/v1/generate-video
-POST /functions/v1/generate-voice
-GET  /functions/v1/jobs/:id
-POST /functions/v1/credits/hold
-POST /functions/v1/credits/finalize
+POST /functions/v1/generate-image    # Generate AI images
+POST /functions/v1/generate-text     # Generate AI text
+```
+
+**Phase 2:**
+```
+# Scheduler
+POST /functions/v1/scheduler-publish/create  # Create scheduled post
+GET  /functions/v1/scheduler-publish/list    # List scheduled posts
+POST /functions/v1/scheduler-publish/now     # Publish immediately
+
+# Channels
+POST /functions/v1/channels/connect          # Connect social account
+GET  /functions/v1/channels/list             # List connected channels
+DELETE /functions/v1/channels/:id            # Disconnect channel
+
+# Automation
+POST /functions/v1/automation-engine/test-run  # Test automation flow
+POST /functions/v1/automation-engine/trigger   # Trigger flow execution
+GET  /functions/v1/automation-engine/runs      # List automation runs
+
+# Cron Worker (Internal)
+POST /functions/v1/scheduler-worker          # Process scheduled posts
+```
+
+### Social Adapter Layer (SAL)
+
+Located in `src/lib/social-providers.ts`, provides unified interface:
+
+```typescript
+// Example: Publish to any platform
+const adapter = getProviderAdapter('facebook_ig');
+const result = await adapter.publish({
+  caption: "Hello world!",
+  media: [...],
+  channel: {...}
+});
+
+// Supported providers:
+// - facebook_ig: Facebook & Instagram
+// - x: X (Twitter)
+// - linkedin: LinkedIn
+// - tiktok: TikTok
 ```
 
 ## 🤝 Contributing
 
-This is a foundational MVP ready for customization:
+This platform is ready for extension and customization:
 
-1. Replace mock providers with real AI integrations
-2. Add Stripe billing (Phase 3)
-3. Implement scheduler and automation (Phase 2)
-4. Add social media integrations
-5. Build template marketplace (Phase 5)
+**Phase 1 → 2 (Completed):**
+- ✅ Database schema extended with social tables
+- ✅ Edge functions for scheduler and automation
+- ✅ Social Adapter Layer (mock implementations)
+- ✅ UI for scheduler, connections, and automation
+
+**Next Steps (Phase 3+):**
+1. Replace mock social OAuth with real providers (Facebook, X, LinkedIn, TikTok)
+2. Implement real AI provider integrations (replace mock-providers.ts)
+3. Add Stripe billing integration
+4. Set up pg_cron for scheduler-worker edge function
+5. Build analytics dashboard with real metrics
+6. Create template marketplace
+
+### Setting up Cron Jobs (Phase 2 completion)
+
+To enable automatic post publishing, set up pg_cron:
+
+```sql
+-- Enable extensions
+create extension if not exists pg_cron;
+create extension if not exists pg_net;
+
+-- Schedule worker to run every minute
+select cron.schedule(
+  'process-scheduled-posts',
+  '* * * * *',
+  $$
+  select net.http_post(
+    url:='https://yenbgkbykomqxncynbrh.supabase.co/functions/v1/scheduler-worker',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer YOUR_SERVICE_ROLE_KEY"}'::jsonb,
+    body:='{}'::jsonb
+  ) as request_id;
+  $$
+);
+```
 
 ## 📝 License
 
@@ -290,4 +425,4 @@ This project was created with Lovable ❤️
 
 **Built with**: React, TypeScript, Tailwind CSS, Supabase, Lovable Cloud  
 **Design**: Modern AI Platform aesthetic with purple-cyan gradients  
-**Status**: MVP Phase 1 Complete ✅
+**Status**: Phase 1 ✅ | Phase 2 ✅ | Phase 3+ 🚀
