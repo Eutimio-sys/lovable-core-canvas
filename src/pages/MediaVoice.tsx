@@ -70,10 +70,17 @@ export default function MediaVoice() {
     
     setIsSaving(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error("You must be logged in to save");
+        return;
+      }
+
       const { error } = await supabase
         .from('assets')
         .insert({
           workspace_id: currentWorkspace.id,
+          created_by: user.id,
           name: text.substring(0, 100) || 'Generated Audio',
           asset_type: 'audio',
           storage_url: generatedAudio,
