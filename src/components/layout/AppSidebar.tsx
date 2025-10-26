@@ -12,6 +12,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { WorkspaceSwitcher } from "./WorkspaceSwitcher";
 
 const mainItems = [
   { title: "Dashboard", url: "/", icon: Home },
@@ -118,7 +119,8 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <div className="p-2 border-t border-border mt-auto">
+      <div className="p-2 border-t border-border mt-auto space-y-2">
+        <WorkspaceSwitcher />
         <SidebarTrigger className="w-full" />
       </div>
     </Sidebar>

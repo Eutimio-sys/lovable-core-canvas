@@ -523,7 +523,25 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      finalize_credits: {
+        Args: {
+          p_actual_amount: number
+          p_description: string
+          p_held_amount: number
+          p_job_id: string
+          p_workspace_id: string
+        }
+        Returns: undefined
+      }
+      hold_credits: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_job_id: string
+          p_workspace_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
