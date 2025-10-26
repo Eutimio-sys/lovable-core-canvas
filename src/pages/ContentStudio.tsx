@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,8 @@ export default function ContentStudio() {
   const [contentType, setContentType] = useState("post");
   const [generatedContent, setGeneratedContent] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
+  const [recentContents, setRecentContents] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !currentWorkspace) {
@@ -53,13 +55,56 @@ export default function ContentStudio() {
     }
   };
 
+  const fetchRecentContents = async () => {
+    if (!currentWorkspace) return;
+    
+    const { data, error } = await supabase
+      .from('contents')
+      .select('*')
+      .eq('workspace_id', currentWorkspace.id)
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (!error && data) {
+      setRecentContents(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentContents();
+  }, [currentWorkspace]);
+
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedContent);
     toast.success("Copied to clipboard!");
   };
 
-  const handleSave = () => {
-    toast.success("Content saved as draft!");
+  const handleSave = async () => {
+    if (!generatedContent || !currentWorkspace) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('contents')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          title: prompt.substring(0, 100) || 'Generated Content',
+          content: generatedContent,
+          content_type: contentType,
+          status: 'draft',
+          ai_params: { prompt, contentType }
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Content saved as draft!");
+      fetchRecentContents();
+    } catch (error) {
+      toast.error("Failed to save content");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -150,9 +195,9 @@ export default function ContentStudio() {
                     <Copy className="h-4 w-4 mr-2" />
                     Copy
                   </Button>
-                  <Button variant="outline" onClick={handleSave} className="flex-1">
+                  <Button variant="outline" onClick={handleSave} disabled={isSaving} className="flex-1">
                     <Save className="h-4 w-4 mr-2" />
-                    Save Draft
+                    {isSaving ? "Saving..." : "Save Draft"}
                   </Button>
                   <Button variant="outline" className="flex-1">
                     <Download className="h-4 w-4 mr-2" />
@@ -178,11 +223,34 @@ export default function ContentStudio() {
           <CardDescription>Your previously generated content</CardDescription>
         </CardHeader>
         <CardContent>
-          <EmptyState
-            icon={Sparkles}
-            title="No saved content"
-            description="Content you save will appear here for easy access"
-          />
+          {recentContents.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {recentContents.map((content) => (
+                <Card key={content.id} className="group hover:shadow-glow transition-shadow cursor-pointer" onClick={() => setGeneratedContent(content.content || '')}>
+                  <CardContent className="p-4">
+                    <div className="space-y-2">
+                      <div className="flex items-start justify-between">
+                        <h4 className="font-medium line-clamp-1">{content.title}</h4>
+                        <Badge variant="outline" className="ml-2">{content.content_type}</Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-2">
+                        {content.content}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {new Date(content.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Sparkles}
+              title="No saved content"
+              description="Content you save will appear here for easy access"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

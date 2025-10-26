@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,6 +19,8 @@ export default function MediaImage() {
   const [style, setStyle] = useState("realistic");
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [recentImages, setRecentImages] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleGenerate = async () => {
     if (!prompt.trim() || !currentWorkspace) {
@@ -55,8 +57,55 @@ export default function MediaImage() {
     }
   };
 
-  const handleSave = () => {
-    toast.success("Image saved to Asset Library!");
+  const fetchRecentImages = async () => {
+    if (!currentWorkspace) return;
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('workspace_id', currentWorkspace.id)
+      .eq('asset_type', 'image')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (!error && data) {
+      setRecentImages(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentImages();
+  }, [currentWorkspace]);
+
+  const handleSave = async () => {
+    if (!generatedImage || !currentWorkspace) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          name: prompt.substring(0, 100) || 'Generated Image',
+          asset_type: 'image',
+          storage_url: generatedImage,
+          cdn_url: generatedImage,
+          width: parseInt(width),
+          height: parseInt(height),
+          ai_params: { prompt, style, width, height },
+          mime_type: 'image/png'
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Image saved to Asset Library!");
+      fetchRecentImages();
+    } catch (error) {
+      toast.error("Failed to save image");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -178,9 +227,9 @@ export default function MediaImage() {
                     <Heart className="h-4 w-4 mr-2" />
                     Like
                   </Button>
-                  <Button variant="outline" onClick={handleSave} className="flex-1">
+                  <Button variant="outline" onClick={handleSave} disabled={isSaving} className="flex-1">
                     <Download className="h-4 w-4 mr-2" />
-                    Save to Library
+                    {isSaving ? "Saving..." : "Save to Library"}
                   </Button>
                   <Button variant="outline" className="flex-1">
                     <Sparkles className="h-4 w-4 mr-2" />
@@ -200,6 +249,40 @@ export default function MediaImage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Images */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Images</CardTitle>
+          <CardDescription>Your recently generated images</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentImages.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+              {recentImages.map((image) => (
+                <div key={image.id} className="group relative aspect-square rounded-lg overflow-hidden border-2 border-border hover:border-primary/50 transition-colors cursor-pointer">
+                  <img
+                    src={image.cdn_url || image.storage_url}
+                    alt={image.name}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button size="sm" variant="secondary" onClick={() => setGeneratedImage(image.cdn_url || image.storage_url)}>
+                      Load
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={ImageIcon}
+              title="No recent images"
+              description="Images you generate will appear here"
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

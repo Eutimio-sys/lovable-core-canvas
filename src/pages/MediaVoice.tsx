@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,15 +7,40 @@ import { Badge } from "@/components/ui/badge";
 import { Slider } from "@/components/ui/slider";
 import { Mic, Sparkles, Download, Play } from "lucide-react";
 import { generateAudio, estimateCredits } from "@/lib/mock-providers";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function MediaVoice() {
+  const { currentWorkspace } = useWorkspace();
   const [text, setText] = useState("");
   const [voice, setVoice] = useState("professional");
   const [speed, setSpeed] = useState([1.0]);
   const [generatedAudio, setGeneratedAudio] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [recentAudio, setRecentAudio] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const fetchRecentAudio = async () => {
+    if (!currentWorkspace) return;
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('workspace_id', currentWorkspace.id)
+      .eq('asset_type', 'audio')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (!error && data) {
+      setRecentAudio(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentAudio();
+  }, [currentWorkspace]);
 
   const handleGenerate = async () => {
     if (!text.trim()) {
@@ -37,6 +62,35 @@ export default function MediaVoice() {
       toast.error("Failed to generate voice");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!generatedAudio || !currentWorkspace) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          name: text.substring(0, 100) || 'Generated Audio',
+          asset_type: 'audio',
+          storage_url: generatedAudio,
+          cdn_url: generatedAudio,
+          ai_params: { text, voice, speed: speed[0] },
+          mime_type: 'audio/mpeg'
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Audio saved to Asset Library!");
+      fetchRecentAudio();
+    } catch (error) {
+      toast.error("Failed to save audio");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -144,9 +198,9 @@ export default function MediaVoice() {
                     <Play className="h-4 w-4 mr-2" />
                     Play
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button variant="outline" onClick={handleSave} disabled={isSaving} className="flex-1">
                     <Download className="h-4 w-4 mr-2" />
-                    Save to Library
+                    {isSaving ? "Saving..." : "Save to Library"}
                   </Button>
                   <Button variant="outline" className="flex-1">
                     <Sparkles className="h-4 w-4 mr-2" />
@@ -166,6 +220,43 @@ export default function MediaVoice() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Audio */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Audio</CardTitle>
+          <CardDescription>Your recently generated audio files</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentAudio.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+              {recentAudio.map((audio) => (
+                <Card key={audio.id} className="group hover:shadow-glow transition-shadow cursor-pointer" onClick={() => setGeneratedAudio(audio.cdn_url || audio.storage_url)}>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                        <Mic className="w-6 h-6 text-primary" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium truncate">{audio.name}</h4>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(audio.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Mic}
+              title="No recent audio"
+              description="Audio you generate will appear here"
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

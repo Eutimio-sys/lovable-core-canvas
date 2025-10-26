@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -6,15 +6,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Video, Sparkles, Download, Play } from "lucide-react";
 import { generateVideo, estimateCredits } from "@/lib/mock-providers";
+import { supabase } from "@/integrations/supabase/client";
+import { useWorkspace } from "@/hooks/useWorkspace";
 import { toast } from "sonner";
 import { EmptyState } from "@/components/shared/EmptyState";
 
 export default function MediaVideo() {
+  const { currentWorkspace } = useWorkspace();
   const [prompt, setPrompt] = useState("");
   const [duration, setDuration] = useState("5");
   const [style, setStyle] = useState("cinematic");
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [recentVideos, setRecentVideos] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const fetchRecentVideos = async () => {
+    if (!currentWorkspace) return;
+    
+    const { data, error } = await supabase
+      .from('assets')
+      .select('*')
+      .eq('workspace_id', currentWorkspace.id)
+      .eq('asset_type', 'video')
+      .order('created_at', { ascending: false })
+      .limit(6);
+    
+    if (!error && data) {
+      setRecentVideos(data);
+    }
+  };
+
+  useEffect(() => {
+    fetchRecentVideos();
+  }, [currentWorkspace]);
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -36,6 +61,36 @@ export default function MediaVideo() {
       toast.error("Failed to generate video");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!generatedVideo || !currentWorkspace) return;
+    
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('assets')
+        .insert({
+          workspace_id: currentWorkspace.id,
+          name: prompt.substring(0, 100) || 'Generated Video',
+          asset_type: 'video',
+          storage_url: generatedVideo,
+          cdn_url: generatedVideo,
+          duration: parseFloat(duration),
+          ai_params: { prompt, style, duration },
+          mime_type: 'video/mp4'
+        });
+      
+      if (error) throw error;
+      
+      toast.success("Video saved to Asset Library!");
+      fetchRecentVideos();
+    } catch (error) {
+      toast.error("Failed to save video");
+      console.error(error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -138,9 +193,9 @@ export default function MediaVideo() {
                     <Play className="h-4 w-4 mr-2" />
                     Preview
                   </Button>
-                  <Button variant="outline" className="flex-1">
+                  <Button variant="outline" onClick={handleSave} disabled={isSaving} className="flex-1">
                     <Download className="h-4 w-4 mr-2" />
-                    Save to Library
+                    {isSaving ? "Saving..." : "Save to Library"}
                   </Button>
                   <Button variant="outline" className="flex-1">
                     <Sparkles className="h-4 w-4 mr-2" />
@@ -160,6 +215,39 @@ export default function MediaVideo() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Recent Videos */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Videos</CardTitle>
+          <CardDescription>Your recently generated videos</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {recentVideos.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+              {recentVideos.map((video) => (
+                <div key={video.id} className="group relative aspect-video rounded-lg overflow-hidden border-2 border-border hover:border-primary/50 transition-colors cursor-pointer">
+                  <video
+                    src={video.cdn_url || video.storage_url}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <Button size="sm" variant="secondary" onClick={() => setGeneratedVideo(video.cdn_url || video.storage_url)}>
+                      Load
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <EmptyState
+              icon={Video}
+              title="No recent videos"
+              description="Videos you generate will appear here"
+            />
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
