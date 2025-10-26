@@ -13,6 +13,8 @@ import MediaVideo from "./pages/MediaVideo";
 import MediaVoice from "./pages/MediaVoice";
 import AssetLibrary from "./pages/AssetLibrary";
 import Scheduler from "./pages/Scheduler";
+import Connections from "./pages/Connections";
+import AutomationBuilder from "./pages/AutomationBuilder";
 import WalletBilling from "./pages/WalletBilling";
 import Members from "./pages/Members";
 import Settings from "./pages/Settings";
