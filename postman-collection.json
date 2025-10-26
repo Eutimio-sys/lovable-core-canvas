@@ -1,0 +1,283 @@
+{
+  "info": {
+    "name": "AI Content Platform - API Collection",
+    "description": "Complete API collection for Phase 1 & 2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://yenbgkbykomqxncynbrh.supabase.co",
+      "type": "string"
+    },
+    {
+      "key": "auth_token",
+      "value": "your_jwt_token_here",
+      "type": "string"
+    },
+    {
+      "key": "workspace_id",
+      "value": "your_workspace_id_here",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Phase 1 - Content & Media",
+      "item": [
+        {
+          "name": "Generate Text",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"Write a blog post about AI automation\",\n  \"type\": \"article\",\n  \"workspaceId\": \"{{workspace_id}}\",\n  \"model\": \"google/gemini-2.5-flash\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/generate-text",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "generate-text"]
+            }
+          }
+        },
+        {
+          "name": "Generate Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prompt\": \"A futuristic city at sunset\",\n  \"width\": 1024,\n  \"height\": 1024,\n  \"workspaceId\": \"{{workspace_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/generate-image",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "generate-image"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 - Connections",
+      "item": [
+        {
+          "name": "Connect Channel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"provider\": \"facebook_ig\",\n  \"workspaceId\": \"{{workspace_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/channels?action=connect",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "channels"],
+              "query": [{"key": "action", "value": "connect"}]
+            }
+          }
+        },
+        {
+          "name": "List Channels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/functions/v1/channels?action=list",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "channels"],
+              "query": [{"key": "action", "value": "list"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 - Scheduler",
+      "item": [
+        {
+          "name": "Create Scheduled Post",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"workspaceId\": \"{{workspace_id}}\",\n  \"caption\": \"Check out our new product! 🚀\",\n  \"assetIds\": [],\n  \"providerTargets\": [\"channel_id_1\"],\n  \"scheduleAt\": \"2024-12-31T14:00:00Z\",\n  \"timezone\": \"Asia/Bangkok\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/scheduler-publish?action=create",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "scheduler-publish"],
+              "query": [{"key": "action", "value": "create"}]
+            }
+          }
+        },
+        {
+          "name": "List Scheduled Posts",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/functions/v1/scheduler-publish?action=list&status=scheduled",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "scheduler-publish"],
+              "query": [
+                {"key": "action", "value": "list"},
+                {"key": "status", "value": "scheduled"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Publish Now",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/functions/v1/scheduler-publish/:postId",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "scheduler-publish", ":postId"],
+              "variable": [
+                {
+                  "key": "postId",
+                  "value": "post_id_here"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Phase 2 - Automation",
+      "item": [
+        {
+          "name": "Test Automation Flow",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flowId\": \"flow_id_here\",\n  \"testData\": {\n    \"contentId\": \"content_id_here\",\n    \"title\": \"Test Article\",\n    \"contentType\": \"article\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/automation-engine?action=test-run",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "automation-engine"],
+              "query": [{"key": "action", "value": "test-run"}]
+            }
+          }
+        },
+        {
+          "name": "List Automation Runs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/functions/v1/automation-engine?action=runs&flowId=flow_id_here",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "automation-engine"],
+              "query": [
+                {"key": "action", "value": "runs"},
+                {"key": "flowId", "value": "flow_id_here"}
+              ]
+            }
+          }
+        },
+        {
+          "name": "Trigger Automation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{auth_token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flowId\": \"flow_id_here\",\n  \"triggerData\": {\n    \"contentId\": \"content_id_here\",\n    \"event\": \"post_created\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/functions/v1/automation-engine?action=trigger",
+              "host": ["{{base_url}}"],
+              "path": ["functions", "v1", "automation-engine"],
+              "query": [{"key": "action", "value": "trigger"}]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
