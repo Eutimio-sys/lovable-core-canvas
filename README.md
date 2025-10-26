@@ -555,7 +555,77 @@ This platform is ready for extension and customization:
 5. Build analytics dashboard with real metrics
 6. Create template marketplace
 
-### Phase 3 Preparation - Stripe Integration (Ready)
+### Phase 3: Stripe Billing & Credit System ✅ (Infrastructure Complete)
+
+**Status**: Database and Edge Functions implemented, awaiting Stripe API key configuration
+
+#### Implemented Features
+
+**Database Schema:**
+- ✅ `plans` table - Subscription tier definitions (Free, Pro, Enterprise)
+- ✅ `packs` table - One-time credit pack definitions (4 packs with bonus credits)
+- ✅ `stripe_events` table - Webhook event logging and audit trail
+- ✅ Extended `workspaces` table with subscription management fields
+- ✅ Extended `wallets` table with lifetime spending and payment tracking
+- ✅ Extended `usage_ledger` table with Stripe payment references
+- ✅ `add_credits()` database function for automated credit provisioning
+
+**Edge Functions:**
+- ✅ `/stripe-checkout` - Creates checkout sessions for subscriptions and credit packs
+- ✅ `/stripe-portal` - Customer portal for billing management
+- ✅ `/stripe-webhook` - Processes Stripe events:
+  - `checkout.session.completed` - Links Stripe customer to workspace
+  - `invoice.paid` - Auto-adds subscription credits monthly
+  - `customer.subscription.updated/deleted` - Updates subscription status
+  - `payment_intent.succeeded` - Adds credit pack purchases with bonuses
+
+**Billing UI:**
+- ✅ Complete `WalletBilling` page with 3 tabs (Plans, Packs, History)
+- ✅ `PlanCard` component - Visual subscription plan display
+- ✅ `CreditPackCard` component - Credit pack display with bonus highlights
+- ✅ `UsageHistory` component - Transaction history with filters
+- ✅ Real-time wallet balance display
+- ✅ Integration with Stripe Checkout and Customer Portal
+
+**Default Pricing:**
+- Free Plan: $0/month, 100 credits
+- Pro Plan: $29/month, 1,000 credits
+- Enterprise Plan: $99/month, 5,000 credits
+- 4 Credit Packs: $9.99 to $199.99 with up to 500 bonus credits
+
+#### Next Steps to Enable Stripe
+
+1. **Add Stripe API Keys** (when ready):
+   ```
+   STRIPE_SECRET_KEY=sk_live_xxxxx or sk_test_xxxxx
+   STRIPE_WEBHOOK_SECRET=whsec_xxxxx (recommended for security)
+   ```
+
+2. **Create Products in Stripe Dashboard:**
+   - Create 3 subscription products (Free, Pro, Enterprise)
+   - Create 4 one-time payment products for credit packs
+   - Copy Price IDs (price_xxxxx)
+
+3. **Link Stripe Prices to Database:**
+   ```sql
+   UPDATE plans SET stripe_price_id = 'price_xxxxx' WHERE name = 'Pro';
+   UPDATE packs SET stripe_price_id = 'price_xxxxx' WHERE name = 'Growth Pack';
+   ```
+
+4. **Configure Webhook Endpoint:**
+   - URL: `https://yenbgkbykomqxncynbrh.supabase.co/functions/v1/stripe-webhook`
+   - Events: checkout.session.completed, invoice.paid, customer.subscription.*, payment_intent.succeeded
+
+5. **Test Flow:**
+   - Use Stripe test keys initially
+   - Test card: 4242 4242 4242 4242
+   - Verify credit allocation after purchase
+
+📖 **Full Documentation**: See `docs/stripe-integration.md` for detailed setup guide
+
+---
+
+### Phase 3 Preparation - Original Stripe Integration (Superseded)
 
 The database is prepared for Stripe integration:
 
