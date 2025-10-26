@@ -176,6 +176,148 @@ export type Database = {
           },
         ]
       }
+      automation_runs: {
+        Row: {
+          created_at: string
+          credits_actual: number | null
+          credits_held: number | null
+          error_message: string | null
+          finished_at: string | null
+          flow_id: string
+          id: string
+          started_at: string
+          status: string
+          steps: Json | null
+          trigger_data: Json | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          credits_actual?: number | null
+          credits_held?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          flow_id: string
+          id?: string
+          started_at?: string
+          status?: string
+          steps?: Json | null
+          trigger_data?: Json | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          credits_actual?: number | null
+          credits_held?: number | null
+          error_message?: string | null
+          finished_at?: string | null
+          flow_id?: string
+          id?: string
+          started_at?: string
+          status?: string
+          steps?: Json | null
+          trigger_data?: Json | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "automation_runs_flow_id_fkey"
+            columns: ["flow_id"]
+            isOneToOne: false
+            referencedRelation: "automation_flows"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channel_tokens: {
+        Row: {
+          access_token: string
+          channel_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          metadata: Json | null
+          refresh_token: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          access_token: string
+          channel_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          refresh_token?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          access_token?: string
+          channel_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          metadata?: Json | null
+          refresh_token?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_tokens_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      channels: {
+        Row: {
+          account_id: string
+          account_name: string
+          connected_at: string
+          created_at: string
+          created_by: string | null
+          id: string
+          metadata: Json | null
+          provider: string
+          scopes: string[] | null
+          status: string
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          account_id: string
+          account_name: string
+          connected_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          provider: string
+          scopes?: string[] | null
+          status?: string
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          account_id?: string
+          account_name?: string
+          connected_at?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          metadata?: Json | null
+          provider?: string
+          scopes?: string[] | null
+          status?: string
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
       contents: {
         Row: {
           ai_params: Json | null
@@ -386,6 +528,110 @@ export type Database = {
             columns: ["workspace_id"]
             isOneToOne: false
             referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          payload: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          payload?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          payload?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: []
+      }
+      scheduled_posts: {
+        Row: {
+          asset_ids: string[] | null
+          caption: string
+          content_id: string | null
+          created_at: string
+          created_by: string | null
+          credits_actual: number | null
+          credits_held: number | null
+          error_message: string | null
+          id: string
+          metadata: Json | null
+          provider_targets: string[]
+          results: Json | null
+          schedule_at: string
+          status: string
+          timezone: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          asset_ids?: string[] | null
+          caption: string
+          content_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credits_actual?: number | null
+          credits_held?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_targets: string[]
+          results?: Json | null
+          schedule_at: string
+          status?: string
+          timezone?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          asset_ids?: string[] | null
+          caption?: string
+          content_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          credits_actual?: number | null
+          credits_held?: number | null
+          error_message?: string | null
+          id?: string
+          metadata?: Json | null
+          provider_targets?: string[]
+          results?: Json | null
+          schedule_at?: string
+          status?: string
+          timezone?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_posts_content_id_fkey"
+            columns: ["content_id"]
+            isOneToOne: false
+            referencedRelation: "contents"
             referencedColumns: ["id"]
           },
         ]

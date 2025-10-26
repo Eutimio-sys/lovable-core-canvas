@@ -1,4 +1,4 @@
-import { Home, FileText, Image, Calendar, Wallet, Users, Settings, Sparkles, Video, Mic } from "lucide-react";
+import { Home, FileText, Image, Calendar, Wallet, Users, Settings, Sparkles, Video, Mic, Link2, Workflow } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import {
   Sidebar,
@@ -28,6 +28,8 @@ const mediaItems = [
 const managementItems = [
   { title: "Asset Library", url: "/assets", icon: Sparkles },
   { title: "Scheduler", url: "/scheduler", icon: Calendar },
+  { title: "Connections", url: "/connections", icon: Link2 },
+  { title: "Automation", url: "/automation", icon: Workflow },
   { title: "Wallet & Billing", url: "/wallet", icon: Wallet },
   { title: "Members", url: "/members", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },

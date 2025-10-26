@@ -121,3 +121,72 @@ export interface AuditLog {
   user_agent: string | null;
   created_at: string;
 }
+
+// Phase 2 types
+export type SocialProvider = 'facebook_ig' | 'x' | 'linkedin' | 'tiktok';
+export type ChannelStatus = 'active' | 'expired' | 'revoked' | 'error';
+export type ScheduledPostStatus = 'draft' | 'scheduled' | 'queued' | 'publishing' | 'published' | 'failed' | 'cancelled';
+export type AutomationRunStatus = 'running' | 'completed' | 'failed' | 'cancelled';
+export type NotificationType = 'publish_success' | 'publish_failed' | 'automation_completed' | 'automation_failed' | 'channel_expired' | 'credits_low' | 'system';
+
+export interface Channel {
+  id: string;
+  workspace_id: string;
+  provider: SocialProvider;
+  account_name: string;
+  account_id: string;
+  status: ChannelStatus;
+  scopes: string[];
+  connected_at: string;
+  metadata: Record<string, any>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ScheduledPost {
+  id: string;
+  workspace_id: string;
+  content_id: string | null;
+  asset_ids: string[];
+  provider_targets: string[];
+  caption: string;
+  schedule_at: string;
+  timezone: string;
+  status: ScheduledPostStatus;
+  results: any[];
+  error_message: string | null;
+  credits_held: number;
+  credits_actual: number | null;
+  metadata: Record<string, any>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AutomationRun {
+  id: string;
+  workspace_id: string;
+  flow_id: string;
+  status: AutomationRunStatus;
+  trigger_data: Record<string, any>;
+  steps: any[];
+  credits_held: number;
+  credits_actual: number | null;
+  error_message: string | null;
+  started_at: string;
+  finished_at: string | null;
+  created_at: string;
+}
+
+export interface Notification {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  payload: Record<string, any>;
+  read_at: string | null;
+  created_at: string;
+}

@@ -99,6 +99,26 @@ const App = () => (
             }
           />
           <Route
+            path="/connections"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Connections />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/automation"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <AutomationBuilder />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/wallet"
             element={
               <ProtectedRoute>

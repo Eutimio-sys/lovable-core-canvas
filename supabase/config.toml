@@ -5,3 +5,15 @@ verify_jwt = true
 
 [functions.generate-image]
 verify_jwt = true
+
+[functions.scheduler-publish]
+verify_jwt = true
+
+[functions.scheduler-worker]
+verify_jwt = false
+
+[functions.channels]
+verify_jwt = true
+
+[functions.automation-engine]
+verify_jwt = true
