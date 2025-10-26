@@ -16,9 +16,11 @@ A full-stack SaaS platform for creating and managing AI-generated content (text,
   - 🎙️ Voice (text-to-speech with multiple voices)
 - ✅ **Asset Library** - Centralized media management with database storage
 - ✅ **Job Queue System** - Async processing with real-time status
-- ✅ **Wallet & Credits** - Usage-based billing with multiple plans
-- ✅ **Dashboard** - Real-time analytics and activity tracking
+- ✅ **Wallet & Credits** - Usage-based billing with hold/finalize system
+- ✅ **Dashboard** - Real-time analytics with live data from database
 - ✅ **Team Management** - Invite members with granular role permissions
+- ✅ **Notification System** - In-app notifications with realtime updates
+- ✅ **Realtime Updates** - Live updates for jobs, assets, and notifications
 
 ### Phase 2 (Scheduler & Automation) - **Complete ✅**
 
@@ -49,6 +51,9 @@ A full-stack SaaS platform for creating and managing AI-generated content (text,
 ### Upcoming Features
 
 - 💳 **Stripe Billing** (Phase 3) - Real payment processing
+  - Workspace prepared with `stripe_customer_id` field
+  - Credit top-up system architecture ready
+  - Subscription management structure defined
 - 📊 **Advanced Analytics** (Phase 4) - Detailed reports and insights
 - 🛍️ **Template Marketplace** (Phase 5) - Share and sell automation workflows
 
@@ -74,13 +79,13 @@ The platform features a modern AI-focused design with:
 
 ### Core Tables
 
-- `workspaces` - Multi-tenant organizations
+- `workspaces` - Multi-tenant organizations (with `stripe_customer_id` for Phase 3)
 - `memberships` - User-workspace relationships with roles
 - `contents` - AI-generated text content
 - `assets` - Media files (images, videos, audio)
 - `jobs` - Async job queue with status tracking
-- `wallets` - Credit balance per workspace
-- `usage_ledger` - Credit transaction history
+- `wallets` - Credit balance per workspace with hold/finalize system
+- `usage_ledger` - Credit transaction history with detailed tracking
 - `invitations` - Team member invitations
 - `audit_logs` - Security and compliance logging
 
@@ -153,12 +158,15 @@ ALTER PUBLICATION supabase_realtime ADD TABLE public.scheduled_posts;
 
 -- Enable realtime for automation runs
 ALTER PUBLICATION supabase_realtime ADD TABLE public.automation_runs;
+
+-- Enable realtime for notifications
+ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
 ```
 
 Then use the realtime hooks in your components:
 
 ```tsx
-import { useRealtimeJobs, useRealtimeAssets } from '@/hooks/useRealtime';
+import { useRealtimeJobs, useRealtimeAssets, useRealtimeNotifications } from '@/hooks/useRealtime';
 
 function Dashboard() {
   const { workspaceId } = useWorkspace();
@@ -168,6 +176,9 @@ function Dashboard() {
   
   // Automatically updates when new assets are created
   useRealtimeAssets(workspaceId);
+  
+  // Automatically updates notifications
+  useRealtimeNotifications();
   
   return <div>...</div>;
 }
@@ -255,6 +266,8 @@ const audio = await generateAudio({
 These can be easily replaced with real AI provider integrations.
 
 ## 🧪 Testing
+
+For complete end-to-end test scenarios and scripts, see **[docs/e2e-scripts.md](./docs/e2e-scripts.md)**
 
 ### E2E Test Paths
 
@@ -344,9 +357,16 @@ src/
 ├── components/
 │   ├── layout/          # AppSidebar, AppLayout
 │   ├── shared/          # Reusable components
+│   │   ├── NotificationPanel.tsx  # In-app notifications
+│   │   ├── JobQueuePanel.tsx      # Job status tracking
+│   │   └── EmptyState.tsx         # Empty state UI
 │   └── ui/              # shadcn components
+├── hooks/
+│   ├── useAuth.tsx      # Authentication hook
+│   ├── useWorkspace.tsx # Workspace context
+│   └── useRealtime.tsx  # Realtime subscriptions
 ├── pages/               # Main application pages
-│   ├── Dashboard.tsx
+│   ├── Dashboard.tsx    # Real-time dashboard with live data
 │   ├── ContentStudio.tsx
 │   ├── MediaImage.tsx
 │   ├── MediaVideo.tsx
@@ -367,6 +387,9 @@ src/
 ├── integrations/
 │   └── supabase/            # Database client & types
 ├── index.css               # Design system tokens
+├── docs/
+│   ├── e2e-scripts.md      # Complete E2E testing guide
+│   └── API_CONTRACTS.md    # API documentation
 └── supabase/
     └── functions/           # Edge functions
         ├── generate-image/
@@ -527,10 +550,30 @@ This platform is ready for extension and customization:
 **Next Steps (Phase 3+):**
 1. Replace mock social OAuth with real providers (Facebook, X, LinkedIn, TikTok)
 2. Implement real AI provider integrations (replace mock-providers.ts)
-3. Add Stripe billing integration
+3. Add Stripe billing integration (workspace already has `stripe_customer_id` field)
 4. Set up pg_cron for scheduler-worker edge function
 5. Build analytics dashboard with real metrics
 6. Create template marketplace
+
+### Phase 3 Preparation - Stripe Integration (Ready)
+
+The database is prepared for Stripe integration:
+
+```sql
+-- Workspace already has stripe_customer_id field
+SELECT stripe_customer_id FROM workspaces WHERE id = '<workspace_id>';
+
+-- Wallet system supports credit top-ups
+SELECT balance, held_balance FROM wallets WHERE workspace_id = '<workspace_id>';
+
+-- Ledger tracks all transactions
+SELECT * FROM usage_ledger WHERE workspace_id = '<workspace_id>';
+```
+
+**Stripe Flow Structure:**
+1. Subscription: `checkout.session.completed` → Save customer ID → `invoice.paid` → Grant credits
+2. Top-up: `payment_intent.succeeded` → Add credits → Update ledger
+3. Portal: Manage subscriptions and view receipts
 
 ### Setting up Cron Jobs (Phase 2 completion)
 
@@ -563,4 +606,4 @@ This project was created with Lovable ❤️
 
 **Built with**: React, TypeScript, Tailwind CSS, Supabase, Lovable Cloud  
 **Design**: Modern AI Platform aesthetic with purple-cyan gradients  
-**Status**: Phase 1 ✅ | Phase 2 ✅ | Phase 3+ 🚀
+**Status**: Phase 1 ✅ (Hardened) | Phase 2 ✅ (Complete) | Phase 3 🚀 (Ready)

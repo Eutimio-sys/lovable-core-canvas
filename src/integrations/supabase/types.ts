@@ -742,6 +742,7 @@ export type Database = {
           owner_id: string
           settings: Json | null
           slug: string
+          stripe_customer_id: string | null
           updated_at: string
         }
         Insert: {
@@ -751,6 +752,7 @@ export type Database = {
           owner_id: string
           settings?: Json | null
           slug: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -760,6 +762,7 @@ export type Database = {
           owner_id?: string
           settings?: Json | null
           slug?: string
+          stripe_customer_id?: string | null
           updated_at?: string
         }
         Relationships: []
