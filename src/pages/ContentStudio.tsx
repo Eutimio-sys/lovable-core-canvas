@@ -1,0 +1,176 @@
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { Sparkles, Save, Copy, Download } from "lucide-react";
+import { generateText, estimateCredits } from "@/lib/mock-providers";
+import { toast } from "sonner";
+import { EmptyState } from "@/components/shared/EmptyState";
+
+export default function ContentStudio() {
+  const [prompt, setPrompt] = useState("");
+  const [contentType, setContentType] = useState("post");
+  const [generatedContent, setGeneratedContent] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async () => {
+    if (!prompt.trim()) {
+      toast.error("Please enter a prompt");
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const result = await generateText({
+        prompt,
+        contentType,
+        maxLength: 500,
+      });
+      setGeneratedContent(result);
+      const credits = estimateCredits('text_generation', { prompt });
+      toast.success(`Content generated! (${credits} credit used)`);
+    } catch (error) {
+      toast.error("Failed to generate content");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(generatedContent);
+    toast.success("Copied to clipboard!");
+  };
+
+  const handleSave = () => {
+    toast.success("Content saved as draft!");
+  };
+
+  return (
+    <div className="p-6 space-y-6 max-w-7xl mx-auto">
+      <div>
+        <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+          Content Studio
+        </h1>
+        <p className="text-muted-foreground">Generate high-quality content with AI</p>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Input Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Content Generation</CardTitle>
+            <CardDescription>
+              Describe what you want to create and let AI do the magic
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Content Type</label>
+              <Select value={contentType} onValueChange={setContentType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="post">Social Media Post</SelectItem>
+                  <SelectItem value="caption">Caption</SelectItem>
+                  <SelectItem value="article">Article</SelectItem>
+                  <SelectItem value="script">Video Script</SelectItem>
+                  <SelectItem value="email">Email</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Prompt</label>
+              <Textarea
+                placeholder="Example: Write a post about the benefits of AI in marketing..."
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                rows={6}
+                className="resize-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Badge variant="outline" className="text-xs">
+                ~{estimateCredits('text_generation', { prompt })} credit
+              </Badge>
+              <Button
+                onClick={handleGenerate}
+                disabled={isGenerating || !prompt.trim()}
+                className="bg-gradient-primary hover:opacity-90"
+              >
+                {isGenerating ? (
+                  <>Generating...</>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Generate
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Output Section */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Generated Content</CardTitle>
+            <CardDescription>Your AI-generated content will appear here</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {generatedContent ? (
+              <div className="space-y-4">
+                <Textarea
+                  value={generatedContent}
+                  onChange={(e) => setGeneratedContent(e.target.value)}
+                  rows={12}
+                  className="resize-none font-mono text-sm"
+                />
+                <div className="flex gap-2">
+                  <Button variant="outline" onClick={handleCopy} className="flex-1">
+                    <Copy className="h-4 w-4 mr-2" />
+                    Copy
+                  </Button>
+                  <Button variant="outline" onClick={handleSave} className="flex-1">
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Draft
+                  </Button>
+                  <Button variant="outline" className="flex-1">
+                    <Download className="h-4 w-4 mr-2" />
+                    Export
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <EmptyState
+                icon={Sparkles}
+                title="No content yet"
+                description="Generate your first piece of content using the form on the left"
+              />
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Contents */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent Contents</CardTitle>
+          <CardDescription>Your previously generated content</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmptyState
+            icon={Sparkles}
+            title="No saved content"
+            description="Content you save will appear here for easy access"
+          />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

@@ -1,73 +1,293 @@
-# Welcome to your Lovable project
+# 💎 AI Content & Automation Platform
 
-## Project info
+> Create once, launch everywhere — powered by AI automation
 
-**URL**: https://lovable.dev/projects/f728fdd3-0a46-425c-8c72-8f5d2effcfe7
+A full-stack SaaS platform for creating and managing AI-generated content (text, images, videos, voice) with scheduling, automation, and multi-tenant workspace management.
 
-## How can I edit this code?
+## 🌟 Features
 
-There are several ways of editing your application.
+### MVP (Phase 1) - **Current Implementation**
 
-**Use Lovable**
+- ✅ **Multi-tenant Workspaces** - Organizations with member management and RBAC
+- ✅ **Content Studio** - AI-powered text generation (posts, captions, articles, scripts)
+- ✅ **Media Studio** - AI generation for:
+  - 🖼️ Images (various styles and sizes)
+  - 🎬 Videos (cinematic, animation, time-lapse)
+  - 🎙️ Voice (text-to-speech with multiple voices)
+- ✅ **Asset Library** - Centralized media management
+- ✅ **Job Queue System** - Async processing with real-time status
+- ✅ **Wallet & Credits** - Usage-based billing with multiple plans
+- ✅ **Dashboard** - Real-time analytics and activity tracking
+- ✅ **Team Management** - Invite members with granular role permissions
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/f728fdd3-0a46-425c-8c72-8f5d2effcfe7) and start prompting.
+### Upcoming Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- 📅 **Scheduler** (Phase 2) - Content calendar and automation workflows
+- 🔗 **Social Integrations** (Phase 2) - Connect to Facebook, Instagram, Twitter, etc.
+- 💳 **Stripe Billing** (Phase 3) - Real payment processing
+- 📊 **Advanced Analytics** (Phase 4) - Detailed reports and insights
+- 🛍️ **Template Marketplace** (Phase 5) - Share and sell automation workflows
 
-**Use your preferred IDE**
+## 🏗️ Architecture
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Tech Stack
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+- **Frontend**: React + Vite + TypeScript + Tailwind CSS
+- **Backend**: Supabase (PostgreSQL + Edge Functions + Auth + Storage)
+- **UI Components**: shadcn/ui with custom design system
+- **State Management**: React Query (TanStack Query)
+- **AI Providers**: Mock adapters (ready for Gemini, OpenAI, Stability, Runway, ElevenLabs)
 
-Follow these steps:
+### Design System
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+The platform features a modern AI-focused design with:
+- **Colors**: Purple-cyan gradients with HSL tokens
+- **Themes**: Full dark mode support
+- **Effects**: Glassmorphism, glow effects, smooth animations
+- **Accessibility**: Semantic tokens and WCAG compliance
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+## 📊 Database Schema
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Core Tables
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+- `workspaces` - Multi-tenant organizations
+- `memberships` - User-workspace relationships with roles
+- `contents` - AI-generated text content
+- `assets` - Media files (images, videos, audio)
+- `jobs` - Async job queue with status tracking
+- `wallets` - Credit balance per workspace
+- `usage_ledger` - Credit transaction history
+- `invitations` - Team member invitations
+- `audit_logs` - Security and compliance logging
+- `automation_flows` - Workflow definitions (Phase 2)
+
+### Role-Based Access Control
+
+7 predefined roles with granular permissions:
+- **Owner**: Full access to everything
+- **Admin**: Manage members and settings
+- **Publisher**: Create and publish content
+- **Creator**: Create own content only
+- **Analyst**: View analytics and reports
+- **Finance**: Manage billing and credits
+- **Guest**: View-only access
+
+## 🚀 Getting Started
+
+### Prerequisites
+
+- Node.js 18+ and npm
+- A Lovable account with Cloud enabled
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd <project-name>
+
+# Install dependencies
+npm install
+
+# Start development server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app will be available at `http://localhost:8080`
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Environment Setup
 
-**Use GitHub Codespaces**
+All environment variables are pre-configured for Lovable Cloud:
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```env
+VITE_SUPABASE_PROJECT_ID=<auto-generated>
+VITE_SUPABASE_PUBLISHABLE_KEY=<auto-generated>
+VITE_SUPABASE_URL=<auto-generated>
+```
 
-## What technologies are used for this project?
+## 🎨 Design System Usage
 
-This project is built with:
+### Using Semantic Tokens
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```tsx
+// ❌ DON'T use direct colors
+<Button className="bg-purple-600 text-white">Click</Button>
 
-## How can I deploy this project?
+// ✅ DO use design system tokens
+<Button className="bg-gradient-primary">Click</Button>
+```
 
-Simply open [Lovable](https://lovable.dev/projects/f728fdd3-0a46-425c-8c72-8f5d2effcfe7) and click on Share -> Publish.
+### Custom Variants
 
-## Can I connect a custom domain to my Lovable project?
+The design system includes pre-built variants for common patterns:
 
-Yes, you can!
+```tsx
+// Gradient backgrounds
+<div className="bg-gradient-primary" />
+<div className="bg-gradient-card" />
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+// Shadows and effects
+<Card className="shadow-glow" />
+<div className="shadow-soft" />
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## 💰 Credit System
+
+### Pricing Model (Mock - Phase 1)
+
+| Feature | Credits | Notes |
+|---------|---------|-------|
+| Text Generation | 1 | Per generation |
+| Image (512x512) | 3 | Low resolution |
+| Image (1024x1024) | 5 | Standard |
+| Image (1536x1536) | 10 | High resolution |
+| Video (5 sec) | 50 | Per 5 seconds |
+| Voice (30 sec) | 1 | Per 30 seconds |
+
+### Subscription Plans
+
+| Plan | Price | Credits/Month | Features |
+|------|-------|---------------|----------|
+| Starter | Free | 20 | Basic AI, Watermarks |
+| Creator | $15 | 300 | All AI models, No watermarks |
+| Pro | $49 | 1,200 | Advanced models, API access |
+| Team | $99 | 3,000 | Team features, Priority support |
+
+## 🔄 Mock AI Providers
+
+Located in `src/lib/mock-providers.ts`, these simulate real AI services:
+
+```typescript
+// Text generation (Gemini/OpenAI)
+const result = await generateText({
+  prompt: "Write a blog post...",
+  contentType: "article"
+});
+
+// Image generation (Stability/Flux)
+const image = await generateImage({
+  prompt: "A beautiful sunset...",
+  width: 1024,
+  height: 1024
+});
+
+// Video generation (Runway/Pika)
+const video = await generateVideo({
+  prompt: "Time-lapse of a city...",
+  duration: 5
+});
+
+// Voice generation (ElevenLabs)
+const audio = await generateAudio({
+  text: "Hello world...",
+  voice: "professional"
+});
+```
+
+These can be easily replaced with real AI provider integrations.
+
+## 🧪 Testing
+
+### Demo Workflow
+
+1. **Generate Content**: Go to Content Studio and create a post
+2. **Create Image**: Use Media Studio to generate an image
+3. **Monitor Jobs**: Watch the job queue in Dashboard
+4. **Check Credits**: View usage in Wallet & Billing
+5. **Manage Team**: Invite members in Members section
+
+### Mock Data
+
+All pages include mock data for demonstration. To connect real data:
+
+1. Create Supabase client queries
+2. Use React Query hooks
+3. Connect to edge functions for AI processing
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── layout/          # AppSidebar, AppLayout
+│   ├── shared/          # Reusable components
+│   └── ui/              # shadcn components
+├── pages/               # Main application pages
+│   ├── Dashboard.tsx
+│   ├── ContentStudio.tsx
+│   ├── MediaImage.tsx
+│   ├── MediaVideo.tsx
+│   ├── MediaVoice.tsx
+│   ├── AssetLibrary.tsx
+│   ├── Scheduler.tsx
+│   ├── WalletBilling.tsx
+│   ├── Members.tsx
+│   └── Settings.tsx
+├── lib/
+│   ├── mock-providers.ts  # AI provider adapters
+│   └── utils.ts           # Utilities
+├── types/
+│   └── index.ts           # TypeScript definitions
+├── integrations/
+│   └── supabase/          # Database client & types
+└── index.css             # Design system tokens
+```
+
+## 🔐 Security
+
+- **RLS Policies**: All tables have Row Level Security enabled
+- **RBAC**: Role-based permissions enforced at database level
+- **Audit Logs**: All important actions are logged
+- **2FA Support**: Two-factor authentication (Settings page)
+
+## 🚀 Deployment
+
+### Frontend (Lovable/Vercel)
+
+```bash
+npm run build
+```
+
+Deploy the `dist` folder to Lovable or Vercel.
+
+### Database (Supabase)
+
+Already connected via Lovable Cloud - no additional setup needed!
+
+### Edge Functions
+
+Edge functions auto-deploy with Lovable Cloud when you make changes.
+
+## 📚 API Documentation
+
+### Edge Functions (To be implemented)
+
+```
+POST /functions/v1/generate-content
+POST /functions/v1/generate-image
+POST /functions/v1/generate-video
+POST /functions/v1/generate-voice
+GET  /functions/v1/jobs/:id
+POST /functions/v1/credits/hold
+POST /functions/v1/credits/finalize
+```
+
+## 🤝 Contributing
+
+This is a foundational MVP ready for customization:
+
+1. Replace mock providers with real AI integrations
+2. Add Stripe billing (Phase 3)
+3. Implement scheduler and automation (Phase 2)
+4. Add social media integrations
+5. Build template marketplace (Phase 5)
+
+## 📝 License
+
+This project was created with Lovable ❤️
+
+---
+
+**Built with**: React, TypeScript, Tailwind CSS, Supabase, Lovable Cloud  
+**Design**: Modern AI Platform aesthetic with purple-cyan gradients  
+**Status**: MVP Phase 1 Complete ✅
